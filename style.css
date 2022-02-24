@@ -19,3 +19,39 @@ body {
   border-radius: 12px;
   box-shadow: 5px 5px 20px #222;
 }
+
+input[type="file"] {
+  display: none;
+}
+
+#image-upload-button {
+  margin-top: 24px;
+  background-color: #fff;
+  color: #028bff;
+  border-radius: 12px;
+  font-size: 24px;
+  display: block;
+  padding: 12px 24px;
+  cursor: pointer;
+}
+
+#drop-zone {
+  background-color: rgba(255, 255, 255, 0.4);
+  width: 600px;
+  height: 600px;
+  border: 6px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#drop-zone.over {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+#drop-zone-label {
+  color: #fff;
+  font-size: 24px;
+}

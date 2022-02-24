@@ -8,11 +8,14 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>Neighbor "Photoshop"</h1>
-
-    <canvas id="canvas" width="600" height="600"></canvas>
-
-    <img src="garage.webp" alt="" id="storage-unit" style="display: none" />
+    <canvas id="canvas" width="600" height="600" style="display: none;"></canvas>
+    <div id="drop-zone" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" ondragenter="dragEnterHandler(event);" ondragleave="dragLeaveHandler(event);">
+      <p id="drop-zone-label">Drag and drop an image here or</p>
+      <label for="image-upload" id="image-upload-button">
+        Select image
+      </label>
+      <input id="image-upload" type="file" onchange="selectHandler(event);" />
+    </div>
     <script src="script.js"></script>
     <script src="utils.js"></script>
   </body>
