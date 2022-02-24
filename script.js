@@ -3,7 +3,15 @@
 const canvas = document.getElementById("canvas"),
   ctx = canvas.getContext("2d"),
   dropZone = document.getElementById("drop-zone"),
-  image = new Image();
+  image = new Image(),
+  handleRadius = 12;
+
+let mouseX = 0,
+  mouseY = 0,
+  mouseIsDown = false,
+  handles = [],
+  offsetX = canvas.offsetLeft,
+  offsetY = canvas.offsetTop;
 
 function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -22,7 +30,35 @@ image.addEventListener("load", function () {
   canvas.style.display = "block";
   dropZone.style.display = "none";
 
-  drawShapes();
+  offsetX = canvas.offsetLeft;
+  offsetY = canvas.offsetTop;
+
+  if (handles.length === 0) {
+    handles = handles.concat([
+      {
+        cursor: "move",
+        x: canvas.width / 3,
+        y: canvas.height / 3,
+      },
+      {
+        cursor: "move",
+        x: (canvas.width * 2) / 3,
+        y: canvas.height / 3,
+      },
+      {
+        cursor: "move",
+        x: canvas.width / 3,
+        y: (canvas.height * 2) / 3,
+      },
+      {
+        cursor: "move",
+        x: (canvas.width * 2) / 3,
+        y: (canvas.height * 2) / 3,
+      },
+    ]);
+
+    drawShapes();
+  }
 });
 
 function setImageToFile(file) {
@@ -70,88 +106,70 @@ function selectHandler(event) {
   setImageToFile(event.target.files[0]);
 }
 
-function drawShapes() {
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = "#00427B"; //blue-90
-  ctx.fillStyle = "#61BDFF"; //blue-30
-  ctx.beginPath();
-  ctx.moveTo(50, 50);
-  ctx.lineTo(150, 50);
-  ctx.lineTo(200, 100);
-  ctx.lineTo(100, 100);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fill();
-
-  handle1 = {
-    x: canvas.width / 2 - 100,
-    y: canvas.height / 2 - 100,
-    radius: 20,
-  };
-
-  handle2 = {
-    x: canvas.width / 2 + 100,
-    y: canvas.height / 2 - 100,
-    radius: 20,
-  };
-
-  handle3 = {
-    x: canvas.width / 2 - 100,
-    y: canvas.height / 2 + 100,
-    radius: 20,
-  };
-
-  handle4 = {
-    x: canvas.width / 2 + 100,
-    y: canvas.height / 2 + 100,
-    radius: 20,
-  };
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(image, 0, 0, image.width, image.height);
-    ctx.fillStyle = "gray";
-    ctx.beginPath();
-    ctx.arc(handle1.x, handle1.y, handle1.radius, 0, Math.PI * 2, false);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(handle2.x, handle2.y, handle2.radius, 0, Math.PI * 2, false);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(handle3.x, handle3.y, handle3.radius, 0, Math.PI * 2, false);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(handle4.x, handle4.y, handle4.radius, 0, Math.PI * 2, false);
-    ctx.fill();
+canvas.addEventListener("mousedown", (event) => {
+  if (event.button === 0) {
+    mouseX = parseInt(event.clientX - offsetX);
+    mouseY = parseInt(event.clientY - offsetY);
+    lastX = mouseX;
+    lastY = mouseY;
+    mouseIsDown = true;
   }
+});
 
-  document.body.addEventListener("mousedown", function (event) {
-    const canvasWindowLocation = canvas.getBoundingClientRect();
-    if (
-      utils.circlePointCollision(
-        event.clientX - canvasWindowLocation.left,
-        event.clientY - canvasWindowLocation.top,
-        handle1
-      )
-    ) {
-      document.body.addEventListener("mousemove", onMouseMove);
-      document.body.addEventListener("mouseup", onMouseUp);
+window.addEventListener("mouseup", () => {
+  mouseIsDown = false;
+});
+
+canvas.addEventListener("mousemove", (event) => {
+  mouseX = parseInt(event.clientX - offsetX);
+  mouseY = parseInt(event.clientY - offsetY);
+
+  if (!mouseIsDown) return updateCursor(mouseX, mouseY);
+
+  for (const handle of handles) {
+    // The handle has to be drawn temporarily for the context to be able to
+    // check if the mouse point is in its path
+    drawHandle(handle);
+
+    if (ctx.isPointInPath(lastX, lastY)) {
+      cursor = handle.cursor;
+      handle.x += mouseX - lastX;
+      handle.y += mouseY - lastY;
     }
-  });
-
-  function onMouseMove(event) {
-    const canvasWindowLocation = canvas.getBoundingClientRect();
-    handle1.x = event.clientX - canvasWindowLocation.left;
-    handle1.y = event.clientY - canvasWindowLocation.top;
-    draw();
   }
 
-  function onMouseUp(event) {
-    document.body.removeEventListener("mousemove", onMouseMove);
-    document.body.removeEventListener("mouseup", onMouseUp);
+  lastX = mouseX;
+  lastY = mouseY;
+
+  drawShapes();
+});
+
+function updateCursor(mouseX, mouseY) {
+  let cursor = "default";
+
+  for (const handle of handles) {
+    // The handle has to be drawn temporarily for the context to be able to
+    // check if the mouse point is in its path
+    drawHandle(handle);
+
+    if (ctx.isPointInPath(mouseX, mouseY)) {
+      cursor = handle.cursor;
+    }
   }
-  draw();
+
+  canvas.style.cursor = cursor;
+}
+
+function drawHandle(handle) {
+  ctx.fillStyle = "gray";
+  ctx.beginPath();
+  ctx.arc(handle.x, handle.y, handleRadius, 0, Math.PI * 2, false);
+  ctx.fill();
+}
+
+function drawShapes() {
+  image.dispatchEvent(new Event("load"));
+  for (const handle of handles) {
+    drawHandle(handle);
+  }
 }
