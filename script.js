@@ -14,12 +14,6 @@ console.log(image);
 canvas.width = image.width;
 canvas.height = image.height;
 
-function drawImage() {
-  ctx.drawImage(image, 0, 0, image.width, image.height);
-}
-
-drawImage();
-
 ctx.lineWidth = 5;
 ctx.strokeStyle = "#00427B"; //blue-90
 ctx.fillStyle = "#61BDFF"; //blue-30
@@ -32,31 +26,69 @@ ctx.closePath();
 ctx.stroke();
 ctx.fill();
 
-handle = {
-  x: canvas.width / 2,
-  y: canvas.height / 2,
+handle1 = {
+  x: canvas.width / 2 - 100,
+  y: canvas.height / 2 - 100,
+  radius: 20,
+};
+
+handle2 = {
+  x: canvas.width / 2 + 100,
+  y: canvas.height / 2 - 100,
+  radius: 20,
+};
+
+handle3 = {
+  x: canvas.width / 2 - 100,
+  y: canvas.height / 2 + 100,
+  radius: 20,
+};
+
+handle4 = {
+  x: canvas.width / 2 + 100,
+  y: canvas.height / 2 + 100,
   radius: 20,
 };
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  //   ctx.drawImage(image, 0, 0, image.width, image.height);
+  ctx.drawImage(image, 0, 0, image.width, image.height);
   ctx.fillStyle = "gray";
   ctx.beginPath();
-  ctx.arc(handle.x, handle.y, handle.radius, 0, Math.PI * 2, false);
+  ctx.arc(handle1.x, handle1.y, handle1.radius, 0, Math.PI * 2, false);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(handle2.x, handle2.y, handle2.radius, 0, Math.PI * 2, false);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(handle3.x, handle3.y, handle3.radius, 0, Math.PI * 2, false);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(handle4.x, handle4.y, handle4.radius, 0, Math.PI * 2, false);
   ctx.fill();
 }
 
 document.body.addEventListener("mousedown", function (event) {
-  if (utils.circlePointCollision(event.clientX, event.clientY, handle)) {
+  const canvasWindowLocation = canvas.getBoundingClientRect();
+  if (
+    utils.circlePointCollision(
+      event.clientX - canvasWindowLocation.left,
+      event.clientY - canvasWindowLocation.top,
+      handle1
+    )
+  ) {
     document.body.addEventListener("mousemove", onMouseMove);
     document.body.addEventListener("mouseup", onMouseUp);
   }
 });
 
 function onMouseMove(event) {
-  handle.x = event.clientX;
-  handle.y = event.clientY;
+  const canvasWindowLocation = canvas.getBoundingClientRect();
+  handle1.x = event.clientX - canvasWindowLocation.left;
+  handle1.y = event.clientY - canvasWindowLocation.top;
   draw();
 }
 
@@ -64,4 +96,4 @@ function onMouseUp(event) {
   document.body.removeEventListener("mousemove", onMouseMove);
   document.body.removeEventListener("mouseup", onMouseUp);
 }
-// draw();
+draw();
