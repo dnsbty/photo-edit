@@ -474,12 +474,8 @@ canvas.addEventListener("mousedown", (event) => {
       showCursor = true;
       const start = new Point(mouseX, mouseY);
       activeShape = new Text(start);
-      console.log(`moving cursor to:`);
-      console.log(`${event.clientX}px`);
       document.getElementById("cursor").style.left = `${event.clientX}px`;
-      document.getElementById("cursor").style.top = `${event.clientY}px`;
-        event.clientY - activeShape.measurements
-      }px`;
+      document.getElementById("cursor").style.top = `${event.clientY - 24}px`;
       // document.getElementById("cursor").style.top = textLocation.left;
       shapes.push(activeShape);
     } else if (activeTool === Tool.Polygon) {
@@ -529,8 +525,8 @@ window.addEventListener("mouseup", () => {
 const IGNORED_KEYS = ["Alt", "Shift", "Ctrl", "Meta"];
 
 window.addEventListener("keyup", (event) => {
+  showCursor = false;
   if (activeTool && event.key === "Escape") {
-    showCursor = false;
     return clearActiveTool();
   }
   if (activeTool === Tool.Text && activeShape) {
