@@ -8,6 +8,7 @@ const canvas = document.getElementById("canvas"),
   handleColor = "#fff",
   handleStrokeColor = "#028bff",
   handleStrokeWidth = 2,
+  hoverColor = "#fff",
   toolButtons = document.querySelectorAll("#tools button"),
   clearButton = document.getElementById("clear-canvas"),
   saveButton = document.getElementById("save-image");
@@ -51,6 +52,7 @@ class Point {
 
 class Shape {
   constructor() {
+    this.hovered = false;
     this.type = this.toString();
   }
 
@@ -97,6 +99,8 @@ class Line extends Shape {
 
   draw() {
     ctx.strokeStyle = this.color;
+    if (this.hovered) ctx.strokeStyle = hoverColor;
+
     ctx.lineWidth = this.width;
     ctx.beginPath();
     ctx.moveTo(this.start.x, this.start.y);
@@ -127,8 +131,9 @@ class Rectangle extends Shape {
   }
 
   draw() {
-    ctx.beginPath();
     ctx.fillStyle = this.color;
+    if (this.hovered) ctx.fillStyle = hoverColor;
+    ctx.beginPath();
     ctx.fillRect(this.topLeft.x, this.topLeft.y, this.width(), this.height());
     ctx.fill();
   }
@@ -164,7 +169,11 @@ class Polygon extends Shape {
   }
 
   draw() {
-    this.lines.forEach((line) => line.draw());
+    for (const line of lines) {
+      line.hovered = this.hovered;
+      line.draw();
+      line.hovered = false;
+    }
   }
 
   addLine(line) {
@@ -223,8 +232,9 @@ class Text extends Shape {
   }
 
   draw() {
-    ctx.font = `${this.size}px ${this.font}`;
     ctx.fillStyle = this.color;
+    if (this.hovered) ctx.fillStyle = hoverColor;
+    ctx.font = `${this.size}px ${this.font}`;
     ctx.fillText(this.text, this.start.x, this.start.y);
   }
 }
@@ -538,6 +548,16 @@ canvas.addEventListener("mousemove", (event) => {
 
   if (activeShape) {
     activeShape.setEnd(new Point(mouseX, mouseY));
+  } else if (!mouseIsDown && activeTool === Tool.Edit) {
+    shapes.forEach((shape) => {
+      shape.hovered = false;
+    });
+    for (const shape of shapes) {
+      if (shape.containsPoint(mouseX, mouseY)) {
+        shape.hovered = true;
+        break;
+      }
+    }
   } else {
     for (const handle of handles) {
       // The handle has to be drawn temporarily for the context to be able to
