@@ -118,6 +118,39 @@ class Rectangle extends Shape {
   }
 }
 
+class Polygon extends Shape {
+  constructor(start, end, color = drawingColor, width = 4) {
+    super();
+    this.lines = [];
+    this.closed = false;
+    this.start = start;
+    this.color = color;
+    this.width = width;
+  }
+
+  draw() {
+    this.lines.forEach((line) => line.draw());
+  }
+
+  addLine(line) {
+    if (
+      this.lines.length > 2 &&
+      Math.abs(this.start.x - line.end.x) < 20 &&
+      Math.abs(this.start.y - line.end.y) < 20
+    ) {
+      this.lines[this.lines.length - 1].end.x = this.start.x;
+      this.lines[this.lines.length - 1].end.y = this.start.y;
+      this.closed = true;
+      return;
+    }
+    this.lines.push(line);
+  }
+
+  setEnd(end) {
+    this.end = end;
+  }
+}
+
 class Text extends Shape {
   constructor(
     topLeft,
@@ -153,6 +186,7 @@ class Text extends Shape {
 
 let activeTool = null,
   activeShape = null,
+  activePolygon = null,
   shapes = [];
 
 function handleToolClick(event) {
@@ -376,7 +410,17 @@ canvas.addEventListener("mousedown", (event) => {
       activeShape = new Text(start);
       shapes.push(activeShape);
     } else if (activeTool === Tool.Polygon) {
-      console.log("poly active");
+      const start = new Point(mouseX, mouseY);
+      activeShape = new Line(start, start);
+      if (!activePolygon) {
+        activePolygon = new Polygon(start, start);
+      }
+      activePolygon.addLine(activeShape);
+      if (activePolygon.closed) {
+        shapes.push(activePolygon);
+        activePolygon = null;
+      }
+      // shapes.push(activeShape);
     } else if (activeTool === Tool.Text) {
       activeShape = null;
       clearActiveTool();
@@ -388,8 +432,7 @@ const IGNORED_TOOLS = [Tool.Brightness, Tool.Text];
 window.addEventListener("mouseup", () => {
   mouseIsDown = false;
 
-  if (activeTool === Tool.Polygon) {
-    //Poly functionality
+  if (activeTool === Tool.Polygon && activePolygon) {
     return;
   } else if (activeTool && !IGNORED_TOOLS.includes(activeTool)) {
     clearActiveTool();
@@ -426,7 +469,7 @@ canvas.addEventListener("mousemove", (event) => {
   mouseX = parseInt(event.clientX - offsetX);
   mouseY = parseInt(event.clientY - offsetY);
 
-  if (!mouseIsDown) return updateCursor(mouseX, mouseY);
+  if (!mouseIsDown) updateCursor(mouseX, mouseY);
 
   if (activeShape) {
     activeShape.setEnd(new Point(mouseX, mouseY));
@@ -490,6 +533,12 @@ function drawShapes() {
 
   for (const shape of shapes) {
     shape.draw();
+  }
+
+  if (activePolygon) {
+    for (const line of activePolygon.lines) {
+      line.draw();
+    }
   }
 }
 
