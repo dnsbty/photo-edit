@@ -45,8 +45,27 @@ class Point {
   }
 }
 
-class Line {
+class Shape {
+  constructor() {
+    this.type = this.toString();
+  }
+
+  draw() {
+    throw `draw() isn't implemented for ${this.toString()}`;
+  }
+
+  setEnd() {
+    throw `setEnd() isn't implemented for ${this.toString()}`;
+  }
+
+  toString() {
+    return Object.getPrototypeOf(this).constructor.name;
+  }
+}
+
+class Line extends Shape {
   constructor(start, end, color = "#ff0000", width = 4) {
+    super();
     this.start = start;
     this.end = end;
     this.color = color;
@@ -67,8 +86,9 @@ class Line {
   }
 }
 
-class Rectangle {
+class Rectangle extends Shape {
   constructor(topLeft, bottomRight, color = "#000") {
+    super();
     this.topLeft = topLeft;
     this.bottomRight = bottomRight;
     this.color = color;
@@ -92,6 +112,35 @@ class Rectangle {
   width() {
     return Math.abs(this.bottomRight.x - this.topLeft.x);
   }
+}
+
+class Text extends Shape {
+  constructor(
+    topLeft,
+    text = "",
+    color = "#ff0000",
+    size = 24,
+    font = "serif"
+  ) {
+    super();
+    this.color = color;
+    this.font = font;
+    this.size = size;
+    this.topLeft = topLeft;
+    this.text = text;
+  }
+
+  addChar(str) {
+    this.text += str;
+  }
+
+  draw() {
+    ctx.font = `${this.size}px ${this.font}`;
+    ctx.fillStyle = this.color;
+    ctx.fillText(this.text, this.topLeft.x, this.topLeft.y);
+  }
+
+  setEnd() {}
 }
 
 let activeTool = null,
@@ -259,6 +308,8 @@ function selectHandler(event) {
   setImageToFile(event.target.files[0]);
 }
 
+// Handle mouse actions
+
 canvas.addEventListener("mousedown", (event) => {
   if (event.button === 0) {
     mouseX = parseInt(event.clientX - offsetX);
@@ -275,6 +326,13 @@ canvas.addEventListener("mousedown", (event) => {
       const start = new Point(mouseX, mouseY);
       activeShape = new Rectangle(start, start);
       shapes.push(activeShape);
+    } else if (activeTool === Tool.Text && !activeShape) {
+      const start = new Point(mouseX, mouseY);
+      activeShape = new Text(start);
+      shapes.push(activeShape);
+    } else if (activeTool === Tool.Text) {
+      activeShape = null;
+      clearActiveTool();
     }
   }
 });
@@ -282,8 +340,30 @@ canvas.addEventListener("mousedown", (event) => {
 window.addEventListener("mouseup", () => {
   mouseIsDown = false;
 
-  if (activeTool) {
+  if (activeTool && activeTool !== Tool.Text) {
     clearActiveTool();
+  }
+});
+
+const IGNORED_KEYS = ["Alt", "Shift", "Ctrl", "Meta", "Enter"];
+
+window.addEventListener("keyup", (event) => {
+  if (activeTool === Tool.Text && activeShape) {
+    event.preventDefault();
+
+    const str = event.key;
+
+    if (IGNORED_KEYS.includes(str)) {
+      return;
+    } else if (str === "Enter") {
+      clearActiveTool();
+      activeShape = null;
+    } else {
+      console.log("adding key", str);
+      activeShape.addChar(str);
+    }
+
+    drawShapes();
   }
 });
 
@@ -317,6 +397,8 @@ canvas.addEventListener("mousemove", (event) => {
 
   drawShapes();
 });
+
+// Redraw canvas elements
 
 function updateCursor(mouseX, mouseY) {
   if (activeTool) return;
