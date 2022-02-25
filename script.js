@@ -12,7 +12,8 @@ const canvas = document.getElementById("canvas"),
   clearButton = document.getElementById("clear-canvas"),
   saveButton = document.getElementById("save-image");
 
-let mouseX = 0,
+let brightness = 100,
+  mouseX = 0,
   mouseY = 0,
   mouseIsDown = false,
   handles = [],
@@ -26,8 +27,9 @@ function clearCanvas() {
 // Set up the tools
 
 class Tool {
+  static Brightness = new Tool("brightness", { popup: "brightness-container" });
   static Crop = new Tool("crop", { cursor: "move" });
-  static Edit = new Tool("edit", { cursor: "default" });
+  static Edit = new Tool("edit", {});
   static Line = new Tool("line", { cursor: "crosshair" });
   static Rectangle = new Tool("rectangle", { cursor: "crosshair" });
   static Text = new Tool("text", { cursor: "text" });
@@ -35,6 +37,7 @@ class Tool {
   constructor(name, properties) {
     this.name = name;
     this.cursor = properties.cursor;
+    this.popup = properties.popup;
   }
 }
 
@@ -157,6 +160,9 @@ function handleToolClick(event) {
 
   let tool = null;
   switch (btn.dataset.tool) {
+    case "brightness":
+      tool = Tool.Brightness;
+      break;
     case "crop":
       tool = Tool.Crop;
       break;
@@ -178,20 +184,30 @@ function handleToolClick(event) {
     activeTool = null;
     btn.classList.remove("active");
     canvas.style.cursor = "default";
+    if (tool.popup) {
+      document.getElementById(tool.popup).style.display = "none";
+    }
   } else {
     activeTool = tool;
     const activeButton = document.querySelector("#tools button.active");
     if (activeButton) activeButton.classList.remove("active");
     btn.classList.add("active");
-    canvas.style.cursor = activeTool.cursor;
+    canvas.style.cursor = activeTool.cursor || "default";
+    if (tool.popup) {
+      document.getElementById(tool.popup).style.display = "block";
+    }
   }
 }
 
 function clearActiveTool() {
-  activeTool = null;
   const activeButton = document.querySelector("#tools button.active");
   if (activeButton) activeButton.classList.remove("active");
   canvas.style.cursor = "default";
+  if (activeTool.popup) {
+    document.getElementById(activeTool.popup).style.display = "none";
+  }
+  activeShape = null;
+  activeTool = null;
 }
 
 for (const btn of toolButtons) {
@@ -222,6 +238,13 @@ colorPicker.addEventListener(
   false
 );
 
+const brightnessSlider = document.getElementById("brightness-slider");
+
+brightnessSlider.addEventListener("change", (event) => {
+  brightness = parseInt(event.target.value);
+  drawShapes();
+});
+
 // Handle images being dragged and dropped or selected
 
 function drawImageToFit(image) {
@@ -237,7 +260,10 @@ function drawImageToFit(image) {
 
   const x = canvas.width / 2 - (image.width / 2) * scale;
   const y = canvas.height / 2 - (image.height / 2) * scale;
+
+  ctx.filter = `brightness(${brightness}%)`;
   ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
+  ctx.filter = "none";
 }
 
 image.addEventListener("load", function () {
@@ -247,8 +273,8 @@ image.addEventListener("load", function () {
   editor.style.display = "block";
   dropZone.style.display = "none";
 
-  offsetX = canvas.offsetLeft;
-  offsetY = canvas.offsetTop;
+  offsetX = canvas.offsetLeft + canvas.offsetParent.offsetLeft;
+  offsetY = canvas.offsetTop + canvas.offsetParent.offsetTop;
 
   // if (handles.length === 0) {
   //   handles = handles.concat([
@@ -352,10 +378,11 @@ canvas.addEventListener("mousedown", (event) => {
   }
 });
 
+const IGNORED_TOOLS = [Tool.Brightness, Tool.Text];
 window.addEventListener("mouseup", () => {
   mouseIsDown = false;
 
-  if (activeTool && activeTool !== Tool.Text) {
+  if (activeTool && !IGNORED_TOOLS.includes(activeTool)) {
     clearActiveTool();
   }
 });
@@ -363,6 +390,9 @@ window.addEventListener("mouseup", () => {
 const IGNORED_KEYS = ["Alt", "Shift", "Ctrl", "Meta"];
 
 window.addEventListener("keyup", (event) => {
+  if (activeTool && event.key === "Escape") {
+    return clearActiveTool();
+  }
   if (activeTool === Tool.Text && activeShape) {
     event.preventDefault();
 
@@ -377,7 +407,6 @@ window.addEventListener("keyup", (event) => {
     } else if (str === "Enter" || str === "Escape") {
       console.log("hit enter or escape");
       clearActiveTool();
-      activeShape = null;
     } else if (str === "Backspace") {
       console.log("hitting backspace");
       activeShape.deleteLastChar();
