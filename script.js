@@ -406,6 +406,7 @@ canvas.addEventListener("mousedown", (event) => {
       activeShape = new Rectangle(start, start);
       shapes.push(activeShape);
     } else if (activeTool === Tool.Text && !activeShape) {
+      console.log("BEGIN FLASHING");
       const start = new Point(mouseX, mouseY);
       activeShape = new Text(start);
       shapes.push(activeShape);
