@@ -169,7 +169,7 @@ class Polygon extends Shape {
   }
 
   draw() {
-    for (const line of lines) {
+    for (const line of this.lines) {
       line.hovered = this.hovered;
       line.draw();
       line.hovered = false;
@@ -336,6 +336,7 @@ colorPicker.addEventListener(
   "change",
   (event) => {
     drawingColor = event.target.value;
+    document.getElementById("cursor").style.color = drawingColor;
   },
   false
 );
@@ -470,9 +471,16 @@ canvas.addEventListener("mousedown", (event) => {
       activeShape = new Rectangle(start, start);
       shapes.push(activeShape);
     } else if (activeTool === Tool.Text && !activeShape) {
-      flashScreen();
+      showCursor = true;
       const start = new Point(mouseX, mouseY);
       activeShape = new Text(start);
+      console.log(`moving cursor to:`);
+      console.log(`${event.clientX}px`);
+      document.getElementById("cursor").style.left = `${event.clientX}px`;
+      document.getElementById("cursor").style.top = `${event.clientY}px`;
+        event.clientY - activeShape.measurements
+      }px`;
+      // document.getElementById("cursor").style.top = textLocation.left;
       shapes.push(activeShape);
     } else if (activeTool === Tool.Polygon) {
       const start = new Point(mouseX, mouseY);
@@ -507,6 +515,10 @@ const IGNORED_TOOLS = [Tool.Brightness, Tool.Edit, Tool.Text];
 window.addEventListener("mouseup", () => {
   mouseIsDown = false;
 
+  if (activeTool !== Tool.Text) {
+    showCursor = false;
+  }
+
   if (activeTool === Tool.Polygon && activePolygon) {
     return;
   } else if (activeTool && !IGNORED_TOOLS.includes(activeTool)) {
@@ -518,6 +530,7 @@ const IGNORED_KEYS = ["Alt", "Shift", "Ctrl", "Meta"];
 
 window.addEventListener("keyup", (event) => {
   if (activeTool && event.key === "Escape") {
+    showCursor = false;
     return clearActiveTool();
   }
   if (activeTool === Tool.Text && activeShape) {
@@ -527,6 +540,7 @@ window.addEventListener("keyup", (event) => {
     if (IGNORED_KEYS.includes(str)) {
       return;
     } else if (str === "Enter" || str === "Escape") {
+      showCursor = false;
       clearActiveTool();
     } else if (str === "Backspace") {
       console.log("hitting backspace");
@@ -639,8 +653,19 @@ document.addEventListener("keydown", function (event) {
   }
 });
 
-function flashScreen() {
-  if (activeTool === Tool.Text) {
-    console.log("FLASH");
+var showCursor = false;
+var cursor = true;
+var speed = 250;
+setInterval(() => {
+  if (showCursor) {
+    if (cursor) {
+      document.getElementById("cursor").style.opacity = 0;
+      cursor = false;
+    } else {
+      document.getElementById("cursor").style.opacity = 1;
+      cursor = true;
+    }
+  } else {
+    document.getElementById("cursor").style.opacity = 0;
   }
-}
+}, speed);
