@@ -27,6 +27,7 @@ function clearCanvas() {
 
 class Tool {
   static Crop = new Tool("crop", { cursor: "move" });
+  static Edit = new Tool("edit", { cursor: "default" });
   static Line = new Tool("line", { cursor: "crosshair" });
   static Rectangle = new Tool("rectangle", { cursor: "crosshair" });
   static Text = new Tool("text", { cursor: "text" });
@@ -45,7 +46,7 @@ class Point {
 }
 
 class Line {
-  constructor(start, end, color = "#fff", width = 4) {
+  constructor(start, end, color = "#ff0000", width = 4) {
     this.start = start;
     this.end = end;
     this.color = color;
@@ -59,6 +60,37 @@ class Line {
     ctx.moveTo(this.start.x, this.start.y);
     ctx.lineTo(this.end.x, this.end.y);
     ctx.stroke();
+  }
+
+  setEnd(end) {
+    this.end = end;
+  }
+}
+
+class Rectangle {
+  constructor(topLeft, bottomRight, color = "#000") {
+    this.topLeft = topLeft;
+    this.bottomRight = bottomRight;
+    this.color = color;
+  }
+
+  draw() {
+    ctx.beginPath();
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.topLeft.x, this.topLeft.y, this.width(), this.height());
+    ctx.fill();
+  }
+
+  height() {
+    return Math.abs(this.bottomRight.y - this.topLeft.y);
+  }
+
+  setEnd(end) {
+    this.bottomRight = end;
+  }
+
+  width() {
+    return Math.abs(this.bottomRight.x - this.topLeft.x);
   }
 }
 
@@ -74,6 +106,9 @@ function handleToolClick(event) {
   switch (btn.dataset.tool) {
     case "crop":
       tool = Tool.Crop;
+      break;
+    case "edit":
+      tool = Tool.Edit;
       break;
     case "line":
       tool = Tool.Line;
@@ -234,7 +269,11 @@ canvas.addEventListener("mousedown", (event) => {
 
     if (activeTool === Tool.Line) {
       const start = new Point(mouseX, mouseY);
-      activeShape = new Line(start, start, "#ff0000", 4);
+      activeShape = new Line(start, start);
+      shapes.push(activeShape);
+    } else if (activeTool === Tool.Rectangle) {
+      const start = new Point(mouseX, mouseY);
+      activeShape = new Rectangle(start, start);
       shapes.push(activeShape);
     }
   }
@@ -244,7 +283,7 @@ window.addEventListener("mouseup", () => {
   mouseIsDown = false;
 
   if (activeTool) {
-    activeTool = null;
+    clearActiveTool();
   }
 });
 
@@ -255,9 +294,7 @@ canvas.addEventListener("mousemove", (event) => {
   if (!mouseIsDown) return updateCursor(mouseX, mouseY);
 
   if (activeShape) {
-    if (activeTool === Tool.Line) {
-      activeShape.end = new Point(mouseX, mouseY);
-    }
+    activeShape.setEnd(new Point(mouseX, mouseY));
   } else {
     for (const handle of handles) {
       // The handle has to be drawn temporarily for the context to be able to
