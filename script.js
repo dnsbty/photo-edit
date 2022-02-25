@@ -209,6 +209,7 @@ class Polygon extends Shape {
   draw() {
     for (const line of this.lines) {
       line.hovered = this.hovered;
+      line.color = this.color;
       line.draw();
       line.hovered = false;
       if (this.selected) line.drawHandles();
