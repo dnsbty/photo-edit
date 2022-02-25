@@ -54,6 +54,10 @@ class Shape {
     this.type = this.toString();
   }
 
+  containsPoint() {
+    throw `containsPoint() isn't implemented for ${this.toString()}`;
+  }
+
   draw() {
     throw `draw() isn't implemented for ${this.toString()}`;
   }
@@ -74,6 +78,21 @@ class Line extends Shape {
     this.end = end;
     this.color = color;
     this.width = width;
+  }
+
+  containsPoint(x, y, affordance = 20) {
+    const xMin = Math.min(this.start.x, this.end.x);
+    const xMax = Math.max(this.start.x, this.end.x);
+    const yMin = Math.min(this.start.y, this.end.y);
+    const yMax = Math.max(this.start.y, this.end.y);
+
+    if (x < xMin || x > xMax || y < yMin || y > yMax) return false;
+
+    const deltaX = xMax - xMin;
+    const deltaY = yMax - yMin;
+    const xPct = (x - xMin) / deltaX;
+    const expectedY = deltaY * xPct + yMin;
+    return y > expectedY - affordance && y < expectedY + affordance;
   }
 
   draw() {
@@ -98,6 +117,15 @@ class Rectangle extends Shape {
     this.color = color;
   }
 
+  containsPoint(x, y) {
+    return (
+      x > this.topLeft.x &&
+      x < this.bottomRight.x &&
+      y > this.topLeft.y &&
+      y < this.bottomRight.y
+    );
+  }
+
   draw() {
     ctx.beginPath();
     ctx.fillStyle = this.color;
@@ -119,13 +147,20 @@ class Rectangle extends Shape {
 }
 
 class Polygon extends Shape {
-  constructor(start, end, color = drawingColor, width = 4) {
+  constructor(start, color = drawingColor, width = 4) {
     super();
     this.lines = [];
     this.closed = false;
     this.start = start;
     this.color = color;
     this.width = width;
+  }
+
+  containsPoint(x, y) {
+    this.lines.forEach((line) => {
+      if (line.containsPoint(x, y)) return true;
+    });
+    return false;
   }
 
   draw() {
@@ -153,7 +188,7 @@ class Polygon extends Shape {
 
 class Text extends Shape {
   constructor(
-    topLeft,
+    start,
     text = "",
     color = drawingColor,
     size = 24,
@@ -163,12 +198,24 @@ class Text extends Shape {
     this.color = color;
     this.font = font;
     this.size = size;
-    this.topLeft = topLeft;
+    // start refers to the start point of the baseline, rather than the top
+    // left corner
+    this.start = start;
     this.text = text;
   }
 
   addChar(str) {
     this.text += str;
+  }
+
+  containsPoint(x, y) {
+    const measurements = ctx.measureText(this.text);
+    const xMin = this.start.x;
+    const xMax = this.start.x + measurements.width;
+    const yMin = this.start.y - measurements.actualBoundingBoxAscent;
+    const yMax = this.start.y + measurements.actualBoundingBoxDescent;
+
+    return x > xMin && x < xMax && y > yMin && y < yMax;
   }
 
   deleteLastChar() {
@@ -178,10 +225,8 @@ class Text extends Shape {
   draw() {
     ctx.font = `${this.size}px ${this.font}`;
     ctx.fillStyle = this.color;
-    ctx.fillText(this.text, this.topLeft.x, this.topLeft.y);
+    ctx.fillText(this.text, this.start.x, this.start.y);
   }
-
-  setEnd() {}
 }
 
 let activeTool = null,
@@ -218,6 +263,10 @@ function handleToolClick(event) {
       break;
   }
 
+  setActiveTool(tool);
+}
+
+function setActiveTool(tool) {
   if (tool === activeTool) {
     activeTool = null;
     btn.classList.remove("active");
@@ -226,10 +275,15 @@ function handleToolClick(event) {
       document.getElementById(tool.popup).style.display = "none";
     }
   } else {
+    if (activeTool) {
+      document
+        .querySelector(`#tools button[data-tool=${activeTool.name}`)
+        .classList.remove("active");
+    }
     activeTool = tool;
-    const activeButton = document.querySelector("#tools button.active");
-    if (activeButton) activeButton.classList.remove("active");
-    btn.classList.add("active");
+    document
+      .querySelector(`#tools button[data-tool=${tool.name}`)
+      .classList.add("active");
     canvas.style.cursor = activeTool.cursor || "default";
     if (tool.popup) {
       document.getElementById(tool.popup).style.display = "block";
@@ -413,7 +467,7 @@ canvas.addEventListener("mousedown", (event) => {
       const start = new Point(mouseX, mouseY);
       activeShape = new Line(start, start);
       if (!activePolygon) {
-        activePolygon = new Polygon(start, start);
+        activePolygon = new Polygon(start);
       }
       activePolygon.addLine(activeShape);
       if (activePolygon.closed) {
@@ -424,11 +478,21 @@ canvas.addEventListener("mousedown", (event) => {
     } else if (activeTool === Tool.Text) {
       activeShape = null;
       clearActiveTool();
+    } else if (activeTool === Tool.Edit && !activeShape) {
+      console.log("checking shapes");
+      for (const shape of shapes) {
+        if (shape.containsPoint(mouseX, mouseY)) {
+          console.log("in path", shape);
+          activeShape = shape;
+          return;
+        }
+        console.log(mouseX, mouseY, "not in path", shape);
+      }
     }
   }
 });
 
-const IGNORED_TOOLS = [Tool.Brightness, Tool.Text];
+const IGNORED_TOOLS = [Tool.Brightness, Tool.Edit, Tool.Text];
 window.addEventListener("mouseup", () => {
   mouseIsDown = false;
 
