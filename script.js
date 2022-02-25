@@ -389,13 +389,13 @@ saveButton.addEventListener("click", () => {
 const colorPicker = document.getElementById("color-picker");
 var drawingColor = colorPicker.value;
 
-colorPicker.addEventListener(
-  "change",
-  (event) => {
-    drawingColor = event.target.value;
-  },
-  false
-);
+colorPicker.addEventListener("change", (event) => {
+  drawingColor = event.target.value;
+  if (activeShape) {
+    activeShape.color = drawingColor;
+    drawShapes();
+  }
+});
 
 const brightnessSlider = document.getElementById("brightness-slider");
 
