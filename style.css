@@ -146,3 +146,12 @@ input[type="file"] {
   border-radius: 24px;
   background-color: rgb(2, 15, 26);
 }
+
+#cursor {
+  font-size: 24px;
+  font-weight: bold;
+  position: absolute;
+  z-index: 5;
+  opacity: 0;
+  color: #028bff;
+}

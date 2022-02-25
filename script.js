@@ -48,22 +48,11 @@ class Point {
     this.x = x;
     this.y = y;
   }
-
-  draw() {
-    ctx.fillStyle = handleColor;
-    ctx.strokeStyle = handleStrokeColor;
-    ctx.lineWidth = handleStrokeWidth;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, handleRadius, 0, Math.PI * 2, false);
-    ctx.fill();
-    ctx.stroke();
-  }
 }
 
 class Shape {
   constructor() {
     this.hovered = false;
-    this.selected = false;
     this.type = this.toString();
   }
 
@@ -93,24 +82,18 @@ class Line extends Shape {
     this.width = width;
   }
 
-  containsPoint(x, y, affordance = 8) {
-    if (this.start.x > this.end.x) {
-      const start = this.end;
-      this.end = this.start;
-      this.start = start;
-    }
-
+  containsPoint(x, y, affordance = 20) {
+    const xMin = Math.min(this.start.x, this.end.x);
+    const xMax = Math.max(this.start.x, this.end.x);
     const yMin = Math.min(this.start.y, this.end.y);
     const yMax = Math.max(this.start.y, this.end.y);
 
-    if (x < this.start.x || x > this.end.x || y < yMin || y > yMax)
-      return false;
+    if (x < xMin || x > xMax || y < yMin || y > yMax) return false;
 
-    const deltaX = this.end.x - this.start.x;
-    const deltaY = this.end.y - this.start.y;
-    const xPct = (x - this.start.x) / deltaX;
-    const expectedY = deltaY * xPct + this.start.y;
-    console.log({ xPct, expectedY, x, y, yMin, deltaY });
+    const deltaX = xMax - xMin;
+    const deltaY = yMax - yMin;
+    const xPct = (x - xMin) / deltaX;
+    const expectedY = deltaY * xPct + yMin;
     return y > expectedY - affordance && y < expectedY + affordance;
   }
 
@@ -123,13 +106,6 @@ class Line extends Shape {
     ctx.moveTo(this.start.x, this.start.y);
     ctx.lineTo(this.end.x, this.end.y);
     ctx.stroke();
-
-    if (this.selected) this.drawHandles();
-  }
-
-  drawHandles() {
-    this.start.draw();
-    this.end.draw();
   }
 
   setEnd(end) {
@@ -160,17 +136,6 @@ class Rectangle extends Shape {
     ctx.beginPath();
     ctx.fillRect(this.topLeft.x, this.topLeft.y, this.width(), this.height());
     ctx.fill();
-
-    if (this.selected) this.drawHandles();
-  }
-
-  drawHandles() {
-    this.topLeft.draw();
-    this.bottomRight.draw();
-    const topRight = new Point(this.bottomRight.x, this.topLeft.y);
-    topRight.draw();
-    const bottomLeft = new Point(this.topLeft.x, this.bottomRight.y);
-    bottomLeft.draw();
   }
 
   height() {
@@ -197,12 +162,9 @@ class Polygon extends Shape {
   }
 
   containsPoint(x, y) {
-    for (const line of this.lines) {
-      if (line.containsPoint(x, y)) {
-        console.log("hit");
-        return true;
-      }
-    }
+    this.lines.forEach((line) => {
+      if (line.containsPoint(x, y)) return true;
+    });
     return false;
   }
 
@@ -211,7 +173,6 @@ class Polygon extends Shape {
       line.hovered = this.hovered;
       line.draw();
       line.hovered = false;
-      if (this.selected) line.drawHandles();
     }
   }
 
@@ -257,7 +218,6 @@ class Text extends Shape {
   }
 
   containsPoint(x, y) {
-    ctx.font = `${this.size}px ${this.font}`;
     const measurements = ctx.measureText(this.text);
     const xMin = this.start.x;
     const xMax = this.start.x + measurements.width;
@@ -276,28 +236,6 @@ class Text extends Shape {
     if (this.hovered) ctx.fillStyle = hoverColor;
     ctx.font = `${this.size}px ${this.font}`;
     ctx.fillText(this.text, this.start.x, this.start.y);
-
-    if (this.selected) this.drawHandles();
-  }
-
-  drawHandles() {
-    ctx.font = `${this.size}px ${this.font}`;
-    const measurements = ctx.measureText(this.text);
-
-    const xMin = this.start.x;
-    const xMax = this.start.x + measurements.width;
-    const yMin = this.start.y - measurements.actualBoundingBoxAscent;
-    const yMax = this.start.y + measurements.actualBoundingBoxDescent;
-
-    const topLeft = new Point(xMin, yMin);
-    const topRight = new Point(xMax, yMin);
-    const bottomLeft = new Point(xMin, yMax);
-    const bottomRight = new Point(xMax, yMax);
-
-    topLeft.draw();
-    topRight.draw();
-    bottomLeft.draw();
-    bottomRight.draw();
   }
 }
 
@@ -340,10 +278,17 @@ function handleToolClick(event) {
 
 function setActiveTool(tool) {
   if (tool === activeTool) {
-    clearActiveTool();
+    activeTool = null;
+    btn.classList.remove("active");
+    canvas.style.cursor = "default";
+    if (tool.popup) {
+      document.getElementById(tool.popup).style.display = "none";
+    }
   } else {
     if (activeTool) {
-      clearActiveTool();
+      document
+        .querySelector(`#tools button[data-tool=${activeTool.name}`)
+        .classList.remove("active");
     }
     activeTool = tool;
     document
@@ -363,10 +308,8 @@ function clearActiveTool() {
   if (activeTool.popup) {
     document.getElementById(activeTool.popup).style.display = "none";
   }
-  if (activeShape) activeShape.selected = false;
   activeShape = null;
   activeTool = null;
-  drawShapes();
 }
 
 for (const btn of toolButtons) {
@@ -391,6 +334,7 @@ var drawingColor = colorPicker.value;
 
 colorPicker.addEventListener("change", (event) => {
   drawingColor = event.target.value;
+  document.getElementById("cursor").style.color = drawingColor;
   if (activeShape) {
     activeShape.color = drawingColor;
     drawShapes();
@@ -527,9 +471,12 @@ canvas.addEventListener("mousedown", (event) => {
       activeShape = new Rectangle(start, start);
       shapes.push(activeShape);
     } else if (activeTool === Tool.Text && !activeShape) {
-      console.log("BEGIN FLASHING");
+      showCursor = true;
       const start = new Point(mouseX, mouseY);
       activeShape = new Text(start);
+      document.getElementById("cursor").style.left = `${event.clientX}px`;
+      document.getElementById("cursor").style.top = `${event.clientY - 24}px`;
+      // document.getElementById("cursor").style.top = textLocation.left;
       shapes.push(activeShape);
     } else if (activeTool === Tool.Polygon) {
       const start = new Point(mouseX, mouseY);
@@ -546,6 +493,16 @@ canvas.addEventListener("mousedown", (event) => {
     } else if (activeTool === Tool.Text) {
       activeShape = null;
       clearActiveTool();
+    } else if (activeTool === Tool.Edit && !activeShape) {
+      console.log("checking shapes");
+      for (const shape of shapes) {
+        if (shape.containsPoint(mouseX, mouseY)) {
+          console.log("in path", shape);
+          activeShape = shape;
+          return;
+        }
+        console.log(mouseX, mouseY, "not in path", shape);
+      }
     }
   }
 });
@@ -554,16 +511,11 @@ const IGNORED_TOOLS = [Tool.Brightness, Tool.Edit, Tool.Text];
 window.addEventListener("mouseup", () => {
   mouseIsDown = false;
 
-  if (activeTool === Tool.Edit && !activeShape) {
-    for (const shape of shapes) {
-      if (shape.containsPoint(mouseX, mouseY)) {
-        activeShape = shape;
-        shape.selected = true;
-        shape.hovered = false;
-        return;
-      }
-    }
-  } else if (activeTool === Tool.Polygon && activePolygon) {
+  if (activeTool !== Tool.Text) {
+    showCursor = false;
+  }
+
+  if (activeTool === Tool.Polygon && activePolygon) {
     return;
   } else if (activeTool && !IGNORED_TOOLS.includes(activeTool)) {
     clearActiveTool();
@@ -573,6 +525,7 @@ window.addEventListener("mouseup", () => {
 const IGNORED_KEYS = ["Alt", "Shift", "Ctrl", "Meta"];
 
 window.addEventListener("keyup", (event) => {
+  showCursor = false;
   if (activeTool && event.key === "Escape") {
     return clearActiveTool();
   }
@@ -583,6 +536,7 @@ window.addEventListener("keyup", (event) => {
     if (IGNORED_KEYS.includes(str)) {
       return;
     } else if (str === "Enter" || str === "Escape") {
+      showCursor = false;
       clearActiveTool();
     } else if (str === "Backspace") {
       console.log("hitting backspace");
@@ -602,9 +556,9 @@ canvas.addEventListener("mousemove", (event) => {
 
   if (!mouseIsDown) updateCursor(mouseX, mouseY);
 
-  if (activeShape && (mouseIsDown || activeTool === Tool.Polygon)) {
+  if (activeShape) {
     activeShape.setEnd(new Point(mouseX, mouseY));
-  } else if (!mouseIsDown && activeTool === Tool.Edit && !activeShape) {
+  } else if (!mouseIsDown && activeTool === Tool.Edit) {
     shapes.forEach((shape) => {
       shape.hovered = false;
     });
@@ -694,3 +648,20 @@ document.addEventListener("keydown", function (event) {
     }
   }
 });
+
+var showCursor = false;
+var cursor = true;
+var speed = 250;
+setInterval(() => {
+  if (showCursor) {
+    if (cursor) {
+      document.getElementById("cursor").style.opacity = 0;
+      cursor = false;
+    } else {
+      document.getElementById("cursor").style.opacity = 1;
+      cursor = true;
+    }
+  } else {
+    document.getElementById("cursor").style.opacity = 0;
+  }
+}, speed);
