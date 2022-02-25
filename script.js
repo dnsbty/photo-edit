@@ -30,6 +30,7 @@ class Tool {
   static Edit = new Tool("edit", { cursor: "default" });
   static Line = new Tool("line", { cursor: "crosshair" });
   static Rectangle = new Tool("rectangle", { cursor: "crosshair" });
+  static Polygon = new Tool("polygon", { cursor: "crosshair" });
   static Text = new Tool("text", { cursor: "text" });
 
   constructor(name, properties) {
@@ -168,6 +169,9 @@ function handleToolClick(event) {
       break;
     case "rectangle":
       tool = Tool.Rectangle;
+      break;
+    case "polygon":
+      tool = Tool.Polygon;
       break;
     case "text":
       tool = Tool.Text;
@@ -345,6 +349,8 @@ canvas.addEventListener("mousedown", (event) => {
       const start = new Point(mouseX, mouseY);
       activeShape = new Text(start);
       shapes.push(activeShape);
+    } else if (activeTool === Tool.Polygon) {
+      console.log("poly active");
     } else if (activeTool === Tool.Text) {
       activeShape = null;
       clearActiveTool();
@@ -355,7 +361,10 @@ canvas.addEventListener("mousedown", (event) => {
 window.addEventListener("mouseup", () => {
   mouseIsDown = false;
 
-  if (activeTool && activeTool !== Tool.Text) {
+  if (activeTool === Tool.Polygon) {
+    //Poly functionality
+    return;
+  } else if (activeTool && activeTool !== Tool.Text) {
     clearActiveTool();
   }
 });
@@ -367,15 +376,9 @@ window.addEventListener("keyup", (event) => {
     event.preventDefault();
 
     const str = event.key;
-    console.log(str);
-
-    if (str === "Enter") {
-      console.log("MADE IT!");
-    }
     if (IGNORED_KEYS.includes(str)) {
       return;
     } else if (str === "Enter" || str === "Escape") {
-      console.log("hit enter or escape");
       clearActiveTool();
       activeShape = null;
     } else if (str === "Backspace") {
