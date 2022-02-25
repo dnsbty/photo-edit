@@ -51,9 +51,20 @@ class Line {
     this.color = color;
     this.width = width;
   }
+
+  draw() {
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = this.width;
+    ctx.beginPath();
+    ctx.moveTo(this.start.x, this.start.y);
+    ctx.lineTo(this.end.x, this.end.y);
+    ctx.stroke();
+  }
 }
 
-let activeTool = null;
+let activeTool = null,
+  activeShape = null,
+  shapes = [];
 
 function handleToolClick(event) {
   event.preventDefault();
@@ -86,6 +97,13 @@ function handleToolClick(event) {
     btn.classList.add("active");
     canvas.style.cursor = activeTool.cursor;
   }
+}
+
+function clearActiveTool() {
+  activeTool = null;
+  const activeButton = document.querySelector("#tools button.active");
+  if (activeButton) activeButton.classList.remove("active");
+  canvas.style.cursor = "default";
 }
 
 for (const btn of toolButtons) {
@@ -213,11 +231,21 @@ canvas.addEventListener("mousedown", (event) => {
     lastX = mouseX;
     lastY = mouseY;
     mouseIsDown = true;
+
+    if (activeTool === Tool.Line) {
+      const start = new Point(mouseX, mouseY);
+      activeShape = new Line(start, start, "#ff0000", 4);
+      shapes.push(activeShape);
+    }
   }
 });
 
 window.addEventListener("mouseup", () => {
   mouseIsDown = false;
+
+  if (activeTool) {
+    activeTool = null;
+  }
 });
 
 canvas.addEventListener("mousemove", (event) => {
@@ -226,18 +254,24 @@ canvas.addEventListener("mousemove", (event) => {
 
   if (!mouseIsDown) return updateCursor(mouseX, mouseY);
 
-  for (const handle of handles) {
-    // The handle has to be drawn temporarily for the context to be able to
-    // check if the mouse point is in its path
-    drawHandle(handle);
+  if (activeShape) {
+    if (activeTool === Tool.Line) {
+      activeShape.end = new Point(mouseX, mouseY);
+    }
+  } else {
+    for (const handle of handles) {
+      // The handle has to be drawn temporarily for the context to be able to
+      // check if the mouse point is in its path
+      drawHandle(handle);
 
-    if (ctx.isPointInPath(lastX, lastY)) {
-      if (!activeTool) {
-        cursor = handle.cursor;
+      if (ctx.isPointInPath(lastX, lastY)) {
+        if (!activeTool) {
+          cursor = handle.cursor;
+        }
+
+        handle.x += mouseX - lastX;
+        handle.y += mouseY - lastY;
       }
-
-      handle.x += mouseX - lastX;
-      handle.y += mouseY - lastY;
     }
   }
 
@@ -278,5 +312,9 @@ function drawShapes() {
   image.dispatchEvent(new Event("load"));
   for (const handle of handles) {
     drawHandle(handle);
+  }
+
+  for (const shape of shapes) {
+    shape.draw();
   }
 }
