@@ -82,18 +82,24 @@ class Line extends Shape {
     this.width = width;
   }
 
-  containsPoint(x, y, affordance = 20) {
-    const xMin = Math.min(this.start.x, this.end.x);
-    const xMax = Math.max(this.start.x, this.end.x);
+  containsPoint(x, y, affordance = 8) {
+    if (this.start.x > this.end.x) {
+      const start = this.end;
+      this.end = this.start;
+      this.start = start;
+    }
+
     const yMin = Math.min(this.start.y, this.end.y);
     const yMax = Math.max(this.start.y, this.end.y);
 
-    if (x < xMin || x > xMax || y < yMin || y > yMax) return false;
+    if (x < this.start.x || x > this.end.x || y < yMin || y > yMax)
+      return false;
 
-    const deltaX = xMax - xMin;
-    const deltaY = yMax - yMin;
-    const xPct = (x - xMin) / deltaX;
-    const expectedY = deltaY * xPct + yMin;
+    const deltaX = this.end.x - this.start.x;
+    const deltaY = this.end.y - this.start.y;
+    const xPct = (x - this.start.x) / deltaX;
+    const expectedY = deltaY * xPct + this.start.y;
+    console.log({ xPct, expectedY, x, y, yMin, deltaY });
     return y > expectedY - affordance && y < expectedY + affordance;
   }
 
