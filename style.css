@@ -14,9 +14,14 @@ body {
   margin: 0;
 }
 
+#editor {
+  display: flex;
+  flex-direction: column;
+}
+
 #canvas {
-  background: #f0f0f0;
-  border-radius: 12px;
+  margin-top: 24px;
+  background: #c0c0c0;
   box-shadow: 5px 5px 20px #222;
 }
 
@@ -54,4 +59,54 @@ input[type="file"] {
 #drop-zone-label {
   color: #fff;
   font-size: 24px;
+}
+
+#toolbar {
+  display: flex;
+  justify-content: space-between;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 0.25em;
+}
+
+#toolbar button {
+  display: inline-block;
+  border: none;
+  border-radius: 1em;
+  padding: 1em;
+  margin: 0;
+  text-decoration: none;
+  background: transparent;
+  color: #ffffff;
+  font-family: sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: center;
+  transition: background 150ms ease-in-out, transform 150ms ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+#toolbar button:hover,
+#toolbar button:focus {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+#toolbar button.active {
+  background: #fff;
+  color: #000;
+}
+
+#toolbar button:focus {
+  outline: 1px solid #fff;
+  outline-offset: -4px;
+}
+
+#toolbar button:active {
+  transform: scale(0.99);
+}
+
+#toolbar button svg {
+  width: 24px;
+  height: 24px;
 }

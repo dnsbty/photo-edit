@@ -4,7 +4,13 @@ const canvas = document.getElementById("canvas"),
   ctx = canvas.getContext("2d"),
   dropZone = document.getElementById("drop-zone"),
   image = new Image(),
-  handleRadius = 12;
+  handleRadius = 6,
+  handleColor = "#fff",
+  handleStrokeColor = "#028bff",
+  handleStrokeWidth = 2,
+  toolButtons = document.querySelectorAll("#tools button"),
+  clearButton = document.getElementById("clear-canvas"),
+  saveButton = document.getElementById("save-image");
 
 let mouseX = 0,
   mouseY = 0,
@@ -17,48 +23,134 @@ function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+// Set up the tools
+
+class Tool {
+  static Crop = new Tool("crop");
+  static Line = new Tool("line");
+  static Rectangle = new Tool("rectangle");
+  static Text = new Tool("text");
+
+  constructor(name) {
+    this.name = name;
+  }
+}
+
+class Point {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+}
+
+class Line {
+  constructor(start, end, color = "#fff", width = 4) {
+    this.start = start;
+    this.end = end;
+    this.color = color;
+    this.width = width;
+  }
+}
+
+let activeTool = null;
+
+function handleToolClick(event) {
+  event.preventDefault();
+  const btn = event.currentTarget;
+
+  let tool = null;
+  switch (btn.dataset.tool) {
+    case "crop":
+      tool = Tool.Crop;
+      break;
+    case "line":
+      tool = Tool.Line;
+      break;
+    case "rectangle":
+      tool = Tool.Rectangle;
+      break;
+    case "text":
+      tool = Tool.Text;
+      break;
+  }
+
+  if (tool === activeTool) {
+    activeTool = null;
+    btn.classList.remove("active");
+  } else {
+    activeTool = tool;
+    const activeButton = document.querySelector("#tools button.active");
+    if (activeButton) activeButton.classList.remove("active");
+    btn.classList.add("active");
+  }
+}
+
+for (const btn of toolButtons) {
+  btn.addEventListener("click", handleToolClick);
+}
+
+clearButton.addEventListener("click", () => {
+  if (confirm("Are you sure you want to start over?")) {
+    clearCanvas();
+    editor.style.display = "none";
+    dropZone.style.display = "flex";
+  }
+});
+
 // Handle images being dragged and dropped or selected
+
+function drawImageToFit(image) {
+  const xScale = canvas.width / image.width;
+  const yScale = canvas.height / image.height;
+  const scale = Math.min(xScale, yScale);
+
+  if (scale === xScale) {
+    canvas.height = image.height * scale;
+  } else {
+    canvas.width = image.width * scale;
+  }
+
+  const x = canvas.width / 2 - (image.width / 2) * scale;
+  const y = canvas.height / 2 - (image.height / 2) * scale;
+  ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
+}
 
 image.addEventListener("load", function () {
   clearCanvas();
+  drawImageToFit(image);
 
-  canvas.width = image.width;
-  canvas.height = image.height;
-
-  ctx.drawImage(image, 0, 0, image.width, image.height);
-
-  canvas.style.display = "block";
+  editor.style.display = "block";
   dropZone.style.display = "none";
 
   offsetX = canvas.offsetLeft;
   offsetY = canvas.offsetTop;
 
-  if (handles.length === 0) {
-    handles = handles.concat([
-      {
-        cursor: "move",
-        x: canvas.width / 3,
-        y: canvas.height / 3,
-      },
-      {
-        cursor: "move",
-        x: (canvas.width * 2) / 3,
-        y: canvas.height / 3,
-      },
-      {
-        cursor: "move",
-        x: canvas.width / 3,
-        y: (canvas.height * 2) / 3,
-      },
-      {
-        cursor: "move",
-        x: (canvas.width * 2) / 3,
-        y: (canvas.height * 2) / 3,
-      },
-    ]);
+  // if (handles.length === 0) {
+  //   handles = handles.concat([
+  //     {
+  //       cursor: "move",
+  //       x: canvas.width / 3,
+  //       y: canvas.height / 3,
+  //     },
+  //     {
+  //       cursor: "move",
+  //       x: (canvas.width * 2) / 3,
+  //       y: canvas.height / 3,
+  //     },
+  //     {
+  //       cursor: "move",
+  //       x: canvas.width / 3,
+  //       y: (canvas.height * 2) / 3,
+  //     },
+  //     {
+  //       cursor: "move",
+  //       x: (canvas.width * 2) / 3,
+  //       y: (canvas.height * 2) / 3,
+  //     },
+  //   ]);
 
-    drawShapes();
-  }
+  //   drawShapes();
+  // }
 });
 
 function setImageToFile(file) {
@@ -161,10 +253,13 @@ function updateCursor(mouseX, mouseY) {
 }
 
 function drawHandle(handle) {
-  ctx.fillStyle = "gray";
+  ctx.fillStyle = handleColor;
+  ctx.strokeStyle = handleStrokeColor;
+  ctx.lineWidth = handleStrokeWidth;
   ctx.beginPath();
   ctx.arc(handle.x, handle.y, handleRadius, 0, Math.PI * 2, false);
   ctx.fill();
+  ctx.stroke();
 }
 
 function drawShapes() {
