@@ -64,7 +64,7 @@ class Shape {
 }
 
 class Line extends Shape {
-  constructor(start, end, color = "#ff0000", width = 4) {
+  constructor(start, end, color = drawingColor, width = 4) {
     super();
     this.start = start;
     this.end = end;
@@ -87,7 +87,7 @@ class Line extends Shape {
 }
 
 class Rectangle extends Shape {
-  constructor(topLeft, bottomRight, color = "#000") {
+  constructor(topLeft, bottomRight, color = drawingColor) {
     super();
     this.topLeft = topLeft;
     this.bottomRight = bottomRight;
@@ -118,7 +118,7 @@ class Text extends Shape {
   constructor(
     topLeft,
     text = "",
-    color = "#ff0000",
+    color = drawingColor,
     size = 24,
     font = "serif"
   ) {
@@ -210,6 +210,17 @@ saveButton.addEventListener("click", () => {
   const data = canvas.toDataURL("image/jpeg");
   saveButton.href = data;
 });
+
+const colorPicker = document.getElementById("color-picker");
+var drawingColor = colorPicker.value;
+
+colorPicker.addEventListener(
+  "change",
+  (event) => {
+    drawingColor = event.target.value;
+  },
+  false
+);
 
 // Handle images being dragged and dropped or selected
 

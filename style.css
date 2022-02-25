@@ -116,3 +116,22 @@ input[type="file"] {
   width: 24px;
   height: 24px;
 }
+
+#color-picker {
+  appearance: none;
+  width: 35px;
+  height: 35px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+#color-picker::-webkit-color-swatch {
+  border-radius: 3px;
+  border: none;
+}
+
+#color-picker::-moz-color-swatch {
+  border-radius: 3px;
+  border: none;
+}
