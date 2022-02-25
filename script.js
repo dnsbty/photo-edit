@@ -134,6 +134,10 @@ class Text extends Shape {
     this.text += str;
   }
 
+  deleteLastChar() {
+    this.text = this.text.slice(0, -1);
+  }
+
   draw() {
     ctx.font = `${this.size}px ${this.font}`;
     ctx.fillStyle = this.color;
@@ -345,19 +349,27 @@ window.addEventListener("mouseup", () => {
   }
 });
 
-const IGNORED_KEYS = ["Alt", "Shift", "Ctrl", "Meta", "Enter"];
+const IGNORED_KEYS = ["Alt", "Shift", "Ctrl", "Meta"];
 
 window.addEventListener("keyup", (event) => {
   if (activeTool === Tool.Text && activeShape) {
     event.preventDefault();
 
     const str = event.key;
+    console.log(str);
 
+    if (str === "Enter") {
+      console.log("MADE IT!");
+    }
     if (IGNORED_KEYS.includes(str)) {
       return;
-    } else if (str === "Enter") {
+    } else if (str === "Enter" || str === "Escape") {
+      console.log("hit enter or escape");
       clearActiveTool();
       activeShape = null;
+    } else if (str === "Backspace") {
+      console.log("hitting backspace");
+      activeShape.deleteLastChar();
     } else {
       console.log("adding key", str);
       activeShape.addChar(str);
@@ -437,3 +449,15 @@ function drawShapes() {
     shape.draw();
   }
 }
+
+document.addEventListener("keydown", function (event) {
+  if (
+    (event.ctrlKey && event.key === "z") ||
+    (event.metaKey && event.key === "z")
+  ) {
+    if (shapes.length > 0) {
+      shapes.pop();
+      drawShapes();
+    }
+  }
+});
