@@ -460,7 +460,7 @@ canvas.addEventListener("mousedown", (event) => {
       activeShape = new Rectangle(start, start);
       shapes.push(activeShape);
     } else if (activeTool === Tool.Text && !activeShape) {
-      console.log("BEGIN FLASHING");
+      flashScreen();
       const start = new Point(mouseX, mouseY);
       activeShape = new Text(start);
       shapes.push(activeShape);
@@ -618,3 +618,9 @@ document.addEventListener("keydown", function (event) {
     }
   }
 });
+
+function flashScreen() {
+  if (activeTool === Tool.Text) {
+    console.log("FLASH");
+  }
+}
