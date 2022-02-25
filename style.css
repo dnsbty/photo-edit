@@ -69,7 +69,8 @@ input[type="file"] {
   padding: 0.25em;
 }
 
-#toolbar button {
+#toolbar button,
+#toolbar a {
   display: inline-block;
   border: none;
   border-radius: 1em;
@@ -88,7 +89,9 @@ input[type="file"] {
 }
 
 #toolbar button:hover,
-#toolbar button:focus {
+#toolbar button:focus,
+#toolbar a:hover,
+#toolbar a:focus {
   background: rgba(0, 0, 0, 0.2);
 }
 
@@ -97,16 +100,19 @@ input[type="file"] {
   color: #000;
 }
 
-#toolbar button:focus {
+#toolbar button:focus,
+#toolbar a:focus {
   outline: 1px solid #fff;
   outline-offset: -4px;
 }
 
-#toolbar button:active {
+#toolbar button:active,
+#toolbar a:active {
   transform: scale(0.99);
 }
 
-#toolbar button svg {
+#toolbar button svg,
+#toolbar a svg {
   width: 24px;
   height: 24px;
 }

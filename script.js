@@ -26,13 +26,14 @@ function clearCanvas() {
 // Set up the tools
 
 class Tool {
-  static Crop = new Tool("crop");
-  static Line = new Tool("line");
-  static Rectangle = new Tool("rectangle");
-  static Text = new Tool("text");
+  static Crop = new Tool("crop", { cursor: "move" });
+  static Line = new Tool("line", { cursor: "crosshair" });
+  static Rectangle = new Tool("rectangle", { cursor: "crosshair" });
+  static Text = new Tool("text", { cursor: "text" });
 
-  constructor(name) {
+  constructor(name, properties) {
     this.name = name;
+    this.cursor = properties.cursor;
   }
 }
 
@@ -77,11 +78,13 @@ function handleToolClick(event) {
   if (tool === activeTool) {
     activeTool = null;
     btn.classList.remove("active");
+    canvas.style.cursor = "default";
   } else {
     activeTool = tool;
     const activeButton = document.querySelector("#tools button.active");
     if (activeButton) activeButton.classList.remove("active");
     btn.classList.add("active");
+    canvas.style.cursor = activeTool.cursor;
   }
 }
 
@@ -95,6 +98,11 @@ clearButton.addEventListener("click", () => {
     editor.style.display = "none";
     dropZone.style.display = "flex";
   }
+});
+
+saveButton.addEventListener("click", () => {
+  const data = canvas.toDataURL("image/jpeg");
+  saveButton.href = data;
 });
 
 // Handle images being dragged and dropped or selected
@@ -224,7 +232,10 @@ canvas.addEventListener("mousemove", (event) => {
     drawHandle(handle);
 
     if (ctx.isPointInPath(lastX, lastY)) {
-      cursor = handle.cursor;
+      if (!activeTool) {
+        cursor = handle.cursor;
+      }
+
       handle.x += mouseX - lastX;
       handle.y += mouseY - lastY;
     }
@@ -237,6 +248,7 @@ canvas.addEventListener("mousemove", (event) => {
 });
 
 function updateCursor(mouseX, mouseY) {
+  if (activeTool) return;
   let cursor = "default";
 
   for (const handle of handles) {
