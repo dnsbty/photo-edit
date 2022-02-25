@@ -168,14 +168,17 @@ class Polygon extends Shape {
   }
 
   containsPoint(x, y) {
-    this.lines.forEach((line) => {
-      if (line.containsPoint(x, y)) return true;
-    });
+    for (const line of this.lines) {
+      if (line.containsPoint(x, y)) {
+        console.log("hit");
+        return true;
+      }
+    }
     return false;
   }
 
   draw() {
-    for (const line of lines) {
+    for (const line of this.lines) {
       line.hovered = this.hovered;
       line.draw();
       line.hovered = false;
