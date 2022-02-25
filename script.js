@@ -201,7 +201,7 @@ class Text extends Shape {
     text = "",
     color = drawingColor,
     size = 24,
-    font = "serif"
+    font = "sans-serif"
   ) {
     super();
     this.color = color;
